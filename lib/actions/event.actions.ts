@@ -21,10 +21,16 @@ const getCategoryByName = async (name: string) => {
   return Category.findOne({ name: { $regex: name, $options: 'i' } })
 }
 
+// const populateEvent = (query: any) => {
+//   return query
+//     .populate({ path: 'organizer', model: User, select: '_id firstName lastName' })
+//     .populate({ path: 'category', model: Category, select: '_id name' })
+// }
+
 const populateEvent = (query: any) => {
   return query
-    .populate({ path: 'organizer', model: User, select: '_id firstName lastName' })
-    .populate({ path: 'category', model: Category, select: '_id name' })
+    .populate({ path: 'organizer', model: User, select: 'clerkId firstName lastName' })
+    .populate({ path: 'category', model: Category, select: '_id name' });
 }
 
 // CREATE
@@ -32,12 +38,16 @@ export async function createEvent({ userId, event, path }: CreateEventParams) {
   try {
     await connectToDatabase()
 
-    const organizer = await User.findById(userId)
+    // const organizer = await User.findById(userId)
+    const organizer = await User.findOne({ clerkId: userId });
 
     console.log("USER ID", userId)
+    console.log("ORGANIZER");
+    console.log(organizer);
     if (!organizer) throw new Error('Organizer not found')
 
-    const newEvent = await Event.create({ ...event, category: event.categoryId, organizer: userId })
+    // const newEvent = await Event.create({ ...event, category: event.categoryId, organizer: userId })
+    const newEvent = await Event.create({ ...event, category: event.categoryId, organizer: organizer._id });
     revalidatePath(path)
 
     return JSON.parse(JSON.stringify(newEvent))
@@ -66,8 +76,13 @@ export async function updateEvent({ userId, event, path }: UpdateEventParams) {
   try {
     await connectToDatabase()
 
+    // Find the organizer by clerkId
+    const organizer = await User.findOne({ clerkId: userId });
+    if (!organizer) throw new Error('Unauthorized or user not found');
+
     const eventToUpdate = await Event.findById(event._id)
-    if (!eventToUpdate || eventToUpdate.organizer.toHexString() !== userId) {
+    // if (!eventToUpdate || eventToUpdate.organizer.toHexString() !== userId) {
+    if (!eventToUpdate || eventToUpdate.organizer.toHexString() !== organizer._id.toHexString()) {
       throw new Error('Unauthorized or event not found')
     }
 
@@ -130,7 +145,12 @@ export async function getEventsByUser({ userId, limit = 6, page }: GetEventsByUs
   try {
     await connectToDatabase()
 
-    const conditions = { organizer: userId }
+    // Find the user by clerkId
+    const organizer = await User.findOne({ clerkId: userId });
+    if (!organizer) throw new Error('User not found');
+
+    // const conditions = { organizer: userId }
+    const conditions = { organizer: organizer._id };
     const skipAmount = (page - 1) * limit
 
     const eventsQuery = Event.find(conditions)
