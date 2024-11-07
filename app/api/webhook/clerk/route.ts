@@ -53,10 +53,11 @@ export async function POST(req: Request) {
   // Get the ID and type
   const { id } = evt.data;
   const eventType = evt.type;
+  console.log("WEBHOOK RUNNING")
  
   if(eventType === 'user.created') {
     const { id, email_addresses, image_url, first_name, last_name, username } = evt.data;
-
+    console.log("User Created with webhook");
     const user = {
       clerkId: id,
       email: email_addresses[0].email_address,
@@ -81,6 +82,7 @@ export async function POST(req: Request) {
 
   if (eventType === 'user.updated') {
     const {id, image_url, first_name, last_name, username } = evt.data
+    console.log("User Updated with webhook");
 
     const user = {
       firstName: first_name,
@@ -96,6 +98,7 @@ export async function POST(req: Request) {
 
   if (eventType === 'user.deleted') {
     const { id } = evt.data
+    console.log("User Deleted with webhook");
 
     const deletedUser = await deleteUser(id!)
 
