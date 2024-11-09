@@ -2,6 +2,7 @@ import Collection from '@/components/shared/Collection'
 import { Button } from '@/components/ui/button'
 import { getEventsByUser } from '@/lib/actions/event.actions'
 import { getOrdersByUser } from '@/lib/actions/order.actions'
+import { getUserById } from '@/lib/actions/user.actions'
 import { IOrder } from '@/lib/database/models/order.model'
 import { SearchParamProps } from '@/types'
 import { auth } from '@clerk/nextjs'
@@ -15,7 +16,10 @@ const ProfilePage = async ({ searchParams }: SearchParamProps) => {
   const ordersPage = Number(searchParams?.ordersPage) || 1;
   const eventsPage = Number(searchParams?.eventsPage) || 1;
 
-  const orders = await getOrdersByUser({ userId, page: ordersPage})
+  const currentUser = await getUserById(userId as string);
+  // console.log(currentUser);
+  const orders = await getOrdersByUser({ userId: currentUser?.id, page: ordersPage})
+  // const orders: any = [];
 
   const orderedEvents = orders?.data.map((order: IOrder) => order.event) || [];
   const organizedEvents = await getEventsByUser({ userId: userId as string, page: eventsPage })
